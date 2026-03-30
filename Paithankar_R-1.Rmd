@@ -1,0 +1,161 @@
+
+```{r}
+# Load necessary packages
+if (!require(readxl)) install.packages("readxl")
+if (!require(ggplot2)) install.packages("ggplot2")
+if (!require(GGally)) install.packages("GGally")
+if (!require(ggridges)) install.packages("ggridges")
+if (!require(dplyr)) install.packages("dplyr")
+if (!require(forcats)) install.packages("forcats")
+
+library(readxl)
+library(ggplot2)
+library(GGally)
+library(ggridges)
+library(dplyr)
+library(forcats)
+
+
+```
+```{r}
+df <- read_excel("~/Desktop/Final/Bhakti_Final/P_final/train_data.xlsx")
+glimpse(df)
+```
+
+
+```{r}
+# Load necessary packages
+packages <- c("readxl", "ggplot2", "dplyr", "ggridges", "GGally", "forcats", "plotly", "scales", "reshape2")
+install_if_missing <- function(p) { if (!require(p, character.only = TRUE)) install.packages(p) }
+invisible(lapply(packages, install_if_missing))
+lapply(packages, library, character.only = TRUE)
+```
+
+```{r}
+ggplot(df, aes(x = Age, y = fct_rev(`Education level`), fill = `Education level`)) +
+  geom_density_ridges(scale = 1.3, alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Age Distribution Across Education Levels", x = "Age", y = "Education Level")
+
+```
+```{r}
+df %>%
+  count(`Is high risk`) %>%
+  mutate(percentage = n / sum(n)) %>%
+  ggplot(aes(x = "", y = percentage, fill = as.factor(`Is high risk`))) +
+  geom_col(width = 1) +
+  coord_polar(theta = "y") +
+  geom_text(aes(label = scales::percent(percentage)), position = position_stack(vjust = 0.5)) +
+  labs(title = "Credit Risk Distribution", fill = "Is High Risk") +
+  theme_void()
+
+
+```
+
+```{r}
+ggplot(df, aes(x = as.factor(`Is high risk`), y = Income, fill = as.factor(`Is high risk`))) +
+  geom_violin(trim = FALSE, alpha = 0.7) +
+  geom_boxplot(width = 0.1, outlier.shape = NA) +
+  labs(title = "Income Distribution by Risk Category", x = "Is High Risk", y = "Income") +
+  theme_minimal()
+
+```
+
+```{r}
+df %>%
+  count(`Has a work phone`, `Has an email`) %>%
+  ggplot(aes(x = as.factor(`Has a work phone`), y = n, fill = as.factor(`Has an email`))) +
+  geom_col(position = "dodge") +
+  labs(title = "Work Phone vs Email Access", x = "Has Work Phone", y = "Count", fill = "Has Email") +
+  theme_minimal()
+
+```
+```{r}
+df %>%
+  count(`Employment status`, `Marital status`) %>%
+  ggplot(aes(x = `Employment status`, y = n, fill = `Marital status`)) +
+  geom_col(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal() +
+  labs(title = "Employment Type across Marital Status", y = "Proportion")
+
+```
+```{r}
+ggplot(df, aes(x = as.factor(`Children count`), y = Income, fill = as.factor(`Children count`))) +
+  geom_violin(trim = FALSE, alpha = 0.7) +
+  stat_summary(fun = "median", geom = "point", shape = 20, size = 3, color = "black") +
+  theme_minimal() +
+  labs(title = "Income Distribution by Number of Children", x = "Children Count", y = "Income") +
+  theme(legend.position = "none")
+
+
+```
+```{r}
+library(dplyr)
+
+df %>%
+  group_by(`Children count`) %>%
+  summarise(mean_income = mean(Income, na.rm = TRUE),
+            sd_income = sd(Income, na.rm = TRUE)) %>%
+  ggplot(aes(x = as.factor(`Children count`), y = mean_income)) +
+  geom_col(fill = "skyblue") +
+  geom_errorbar(aes(ymin = mean_income - sd_income, ymax = mean_income + sd_income), width = 0.2) +
+  theme_minimal() +
+  labs(title = "Average Income by Children Count (with SD Error Bars)", x = "Children", y = "Mean Income")
+
+```
+```{r}
+ggplot(df, aes(x = `Education level`, fill = Gender)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Education Level by Gender", x = "Education Level", y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+```{r}
+df %>%
+  group_by(`Education level`) %>%
+  summarise(avg_age = mean(`Account age`, na.rm = TRUE)) %>%
+  slice_max(avg_age, n = 10) %>%
+  ggplot(aes(x = reorder(`Education level`, avg_age), y = avg_age)) +
+  geom_col(fill = "skyblue") +
+  coord_flip() +
+  labs(title = "Top Education Levels by Avg Account Age", x = "Education Level", y = "Avg Account Age") +
+  theme_minimal()
+
+
+
+```
+
+```{r}
+library(tidyr)
+
+df %>%
+  group_by(Gender, `Marital status`) %>%
+  summarise(avg_income = mean(Income, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = `Marital status`, values_from = avg_income)
+
+```
+```{r}
+library(tidyr)
+
+df %>%
+  group_by(`Education level`, `Employment status`) %>%
+  summarise(avg_income = mean(Income, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = `Employment status`, values_from = avg_income)
+
+```
+```{r}
+library(tidyr)
+
+df %>%
+  group_by(`Has a car`, `Is high risk`) %>%
+  summarise(avg_account_age = mean(`Account age`, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = `Is high risk`, values_from = avg_account_age,
+              names_prefix = "Risk_")
+
+
+```
+
+
+

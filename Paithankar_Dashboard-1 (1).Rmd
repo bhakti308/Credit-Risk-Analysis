@@ -1,0 +1,91 @@
+
+---
+title: "QA Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(janitor)
+library(plotly)
+library(readxl)
+
+# Load and clean data
+df <- read_excel("~/Desktop/Final/Bhakti_Final/P_final/train_data.xlsx")
+df <- clean_names(df)
+```
+
+Row {data-height=150}
+-------------------------------------
+
+### Total Records
+```{r}
+valueBox(value = nrow(df), icon = "fa-database", color = "lightblue")
+```
+
+### % High Risk
+```{r}
+risk_pct <- mean(df$is_high_risk == 1, na.rm = TRUE) * 100
+valueBox(value = sprintf("%.1f%%", risk_pct), icon = "fa-exclamation-triangle", color = "red")
+```
+
+### Avg Income
+```{r}
+avg_income <- mean(df$income, na.rm = TRUE)
+valueBox(value = scales::dollar(avg_income), icon = "fa-money-bill", color = "green")
+```
+
+### Median Account Age
+```{r}
+median_age <- median(df$account_age, na.rm = TRUE)
+valueBox(value = paste(median_age, "days"), icon = "fa-calendar", color = "purple")
+```
+
+Row {data-height=500}
+-------------------------------------
+
+### Risk by Job Title
+```{r}
+plot_ly(df %>% count(job_title, is_high_risk),
+        x = ~n, y = ~job_title, color = ~as.factor(is_high_risk),
+        type = 'bar', orientation = 'h') %>%
+  layout(title = "High Risk Count by Job Title", barmode = "stack")
+```
+
+
+
+### Income Distribution by Education Level
+```{r}
+plot_ly(df, y = ~income, x = ~education_level,
+        type = "box", color = ~education_level) %>%
+  layout(title = "Income Distribution Across Education Levels",
+         xaxis = list(title = "Education Level"), yaxis = list(title = "Income"))
+
+```
+
+Row
+-------------------------------------
+
+### Education Breakdown
+```{r}
+df %>% count(education_level) %>%
+  plot_ly(labels = ~education_level, values = ~n, type = "pie", hole = 0.5) %>%
+  layout(title = "Education Level Distribution")
+```
+
+### Heatmap: Avg Income by Education & Employment
+```{r}
+heat_data <- df %>%
+  group_by(education_level, employment_status) %>%
+  summarise(avg_income = mean(income, na.rm = TRUE), .groups = "drop")
+
+plot_ly(
+  data = heat_data, x = ~employment_status, y = ~education_level,
+  z = ~avg_income, type = "heatmap", colorscale = "Viridis"
+) %>%
+  layout(title = "Average Income by Education and Employment")
+```
